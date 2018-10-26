@@ -1,0 +1,11 @@
+{
+    "inputMessageMetadata": {},
+    "outputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "Web_Service_Consumer",
+            "typeId": "getBankDetailsRequest"
+        }
+    },
+    "id": "6e4e54df-4f0b-4ebd-ab29-6f961cc6a4bd",
+    "version": "5.2.0.0"
+}

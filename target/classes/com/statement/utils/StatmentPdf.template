@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<body>
+                <table border=4>
+                <tr>
+                        <th>AccountId</th>
+                        <th>StatementId</th>
+                         <th>StatementDate</th> 
+                         <th>Description</th>
+                </tr>
+                <tr>
+                        <td>#[payload[0]['AccountId']]</td>
+                        <td>#[payload[0]['StatementId']]</td>
+                         <td>#[payload[0]['StatementDate']]</td>
+                         <td>#[payload[0]['Description']]</td>
+                </tr>
+                </table>
+        </body>
+</html>

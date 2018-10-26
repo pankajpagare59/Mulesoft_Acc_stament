@@ -1,0 +1,20 @@
+
+[{
+	"bank":
+		{
+			"bankName":"Axis Bank",
+			"branch":
+			{
+				"branchName":"Nigdi",
+				"ifsc":" UTIB0001494",
+				"address":"Nigdi",
+				"city":"Pune",
+				"state":"Maharashtra",
+				"country":"India",
+				"zip":"411044",
+				"telephone":"020-276420125",
+				"email":"customer.service@axisbank.com"
+			}
+		}
+}] 
+   

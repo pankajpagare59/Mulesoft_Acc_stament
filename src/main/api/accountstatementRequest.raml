@@ -1,0 +1,80 @@
+#%RAML 1.0
+baseUri: https://mocksvc.mulesoft.com/mocks/603d4ad2-c476-4265-abc1-e2a1c195962e # 
+title: accountstatement
+version: 1.0.0
+protocols : [HTTP] 
+mediaType : application/json
+securitySchemes:
+  basic:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+types: 
+  Identifier  :
+    type: string
+    pattern: \d+
+    maxLength: 128
+  
+  Timestamp :
+    type: date-only
+  
+  statement :
+    type: object
+    properties: 
+      accountId : Identifier
+      statementId : Identifier
+      statementDate : Timestamp
+      description : string
+  
+  errors :
+    type: object
+    properties: 
+      message : string
+
+         
+/accounts/{accountId}/statement/{statementId}:
+  get:
+    securedBy: 
+    description: To get an account statement
+    responses: 
+      200:
+        body: 
+          application/json :
+            type: statement
+            example: !include statementResponse.raml
+             
+
+      400 :
+        body: 
+          application/json:
+            type: errors
+            example: !include errors.raml
+                
+      401 :
+        body: 
+          application/json:
+            type: errors
+            example: !include errors.raml
+                     
+      404 :
+        body: 
+          application/json:
+            type: errors
+            example: !include errors.raml
+              
+      405 :
+        body: 
+          application/json:
+            type: errors
+            example: !include errors.raml
+      500 :
+        body: 
+          application/json: 
+            type: errors
+            example: !include errors.raml
+      
+
+
+            
+
+

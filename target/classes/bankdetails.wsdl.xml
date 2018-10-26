@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:sch="http://bank-web-service" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://bank-web-service" targetNamespace="http://bank-web-service">
+  <wsdl:types>
+    <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://bank-web-service">
+
+	<xs:element name="getBankDetailsRequest">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="customerId" type="xs:string"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:element name="getBankDetailsResponse">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="bank" type="tns:bank"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+
+	<xs:complexType name="bank">
+		<xs:sequence>
+			<xs:element name="bankName" type="xs:string"/>
+			<xs:element name="branch" type="tns:branch"/>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="branch">
+		<xs:sequence>
+			<xs:element name="branchName" type="xs:string"/>
+			<xs:element name="ifsc" type="xs:string"/>
+			<xs:element name="address" type="xs:string"/>
+			<xs:element name="city" type="xs:string"/>
+			<xs:element name="state" type="xs:string"/>
+			<xs:element name="country" type="xs:string"/>
+			<xs:element name="zip" type="xs:string"/>
+			<xs:element name="telephone" type="xs:string"/>
+			<xs:element name="email" type="xs:string"/>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="getBankDetailsRequest">
+    <wsdl:part element="tns:getBankDetailsRequest" name="getBankDetailsRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="getBankDetailsResponse">
+    <wsdl:part element="tns:getBankDetailsResponse" name="getBankDetailsResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="BankDetailPort">
+    <wsdl:operation name="getBankDetails">
+      <wsdl:input message="tns:getBankDetailsRequest" name="getBankDetailsRequest">
+    </wsdl:input>
+      <wsdl:output message="tns:getBankDetailsResponse" name="getBankDetailsResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="BankDetailPortSoap11" type="tns:BankDetailPort">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="getBankDetails">
+      <soap:operation soapAction=""/>
+      <wsdl:input name="getBankDetailsRequest">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="getBankDetailsResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="BankDetailPortService">
+    <wsdl:port binding="tns:BankDetailPortSoap11" name="BankDetailPortSoap11">
+      <soap:address location="http://34.236.109.151:8000/ws"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

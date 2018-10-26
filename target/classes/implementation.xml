@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:ws="http://www.mulesoft.org/schema/mule/ws" xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd
+http://www.mulesoft.org/schema/mule/ws http://www.mulesoft.org/schema/mule/ws/current/mule-ws.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+    <ws:consumer-config name="Web_Service_Consumer" wsdlLocation="bankdetails.wsdl.xml" service="BankDetailPortService" port="BankDetailPortSoap11" serviceAddress="http://34.236.109.151:8000/ws" doc:name="Web Service Consumer"/>
+   
+	<flow name="getAccountStatementFlow">
+		<validation:all doc:name="Validation" >
+            <validation:validations>
+                <validation:is-not-empty value="#[flowVars.accountId]" message="AccountID is  Not Empty!!!"/>
+                <validation:is-not-empty value="#[flowVars.statementId]" message="StatementID Not Empty!!!"/>
+            </validation:validations>
+        </validation:all>
+		<db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT *
+FROM statement
+WHERE AccountId = #[message.inboundProperties.'http.uri.params'.accountId] and StatementId = #[message.inboundProperties.'http.uri.params'.statementId]]]></db:parameterized-query>
+		</db:select>
+        <validation:is-not-empty  exceptionClass="java.util.NoSuchElementException" value="#[payload]" doc:name="Validation"/>
+		<dw:transform-message doc:name="Transform Message"
+			metadata:id="e2008748-d10a-4210-a6fe-314d55ca69e0">
+			<dw:input-payload doc:sample="sample_data\list_map.dwl" />
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+		</dw:transform-message>
+        <logger message="Object2String #[payload]" level="INFO" doc:name="Logger"/>
+        <scatter-gather doc:name="Scatter-Gather">
+            <custom-aggregation-strategy class="com.statement.aggregater.CustomAggregater"/>
+            <flow-ref name="ConnectAMQPMessageFlow" doc:name="AMQP_Flow_Reference"/>
+            <flow-ref name="PostmanDataFlow" doc:name="Postman_Flow_Reference"/>
+
+        </scatter-gather>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+
+
+	</flow>
+    <flow name="PostmanDataFlow">
+      <dw:transform-message doc:name="Transform Message" metadata:id="c46035ad-1d53-4c48-93a7-6422304df6a1">
+            <dw:input-payload doc:sample="statement-example.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <component class="com.statement.utils.StatementInPDFUtils" doc:name="Java"/>
+		<set-property doc:name="Content Type" propertyName="Content-Type"
+value="application/pdf" mimeType="application/pdf"/>
+    </flow>
+  
+    <flow name="ConnectAMQPMessageFlow">
+        <object-to-string-transformer doc:name="Object to String"/>
+        <amqp:outbound-endpoint queueName="statement" responseTimeout="10000" exchange-pattern="request-response" doc:name="AMQP-0-9"/>
+    </flow>
+    <flow name="implementationFlow">
+        <email:bytes-to-mime-transformer doc:name="Byte Array to MIME"/>
+    </flow>
+    <flow name="SOAPWebServiceConsumFlow">
+        <db:select config-ref="MySQL_Configuration" doc:name="Database">
+            <db:parameterized-query><![CDATA[SELECT CustomerId from accountdescriptor
+WHERE AccountId =#[message.inboundProperties.'http.uri.params'.accountId]]]></db:parameterized-query>
+
+        </db:select>
+
+        <dw:transform-message doc:name="Transform Message" metadata:id="6e4e54df-4f0b-4ebd-ab29-6f961cc6a4bd">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://bank-web-service
+---
+{
+	ns0#getBankDetailsRequest: {
+		ns0#customerId: payload.CustomerId[0]
+		
+		
+		
+		
+		
+		
+		
+		
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <ws:consumer config-ref="Web_Service_Consumer" operation="getBankDetails" doc:name="Web Service Consumer"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="f58a1ede-0239-40e4-acf3-eb5c3687c8dc">
+            <dw:input-payload doc:sample="sample_data\getBankDetailsResponse_1.xml"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+%namespace ns0 http://bank-web-service
+---
+[{
+	bank: {
+		bankName: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#bankName,
+		branch: {
+			branchName: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#branchName,
+			ifsc: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#ifsc,
+			address: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#address,
+			city: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#city,
+			state: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#state,
+			country: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#country,
+			zip: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#zip,
+			telephone: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#telephone,
+			email: payload.ns0#getBankDetailsResponse.ns0#bank.ns0#branch.ns0#email
+		}
+	}
+}]]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="SOAP Details: #[message]" level="INFO" doc:name="Logger"/>
+
+    </flow>
+
+
+</mule>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:amqp="http://www.mulesoft.org/schema/mule/amqp"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/amqp http://www.mulesoft.org/schema/mule/amqp/current/mule-amqp.xsd">
+	<configuration defaultExceptionStrategy-ref="globalChoice_Exception_Strategy"
+		doc:name="Configuration">
+		<http:config useTransportForUris="false" />
+	</configuration>
+	<db:mysql-config name="MySQL_Configuration" host="${db.host}"
+		port="${db.port}" user="${db.user}" password="${db.password}"
+		database="${db.database}" doc:name="MySQL Configuration" />
+	<context:property-placeholder location="statement-${env}.properties" />
+	<http:listener-config name="HTTP_Listener_Configuration"
+		host="0.0.0.0" port="${http.port}" doc:name="HTTP Listener Configuration" />
+    <amqp:connector name="AMQP_0_9_Connector" validateConnections="true" host="chimpanzee.rmq.cloudamqp.com" virtualHost="umcntaxz" username="umcntaxz" password="3j0m_DOK5sRcnw9pkV5IkX35IxINN9tI" doc:name="AMQP-0-9 Connector"/>
+	<choice-exception-strategy name="globalChoice_Exception_Strategy">
+		<catch-exception-strategy
+			when="#[exception.causedBy(java.util.NoSuchElementException)]"
+			doc:name="AccountID_StatementID_Not_Found">
+			<set-payload value="AccountId or StatementId is Not Found!"
+				doc:name="Set Payload" />
+			<set-property propertyName="http.status" value="404"
+				doc:name="Property" />
+			<logger message="#[message]" level="INFO" doc:name="Logger" />
+		</catch-exception-strategy>
+		<catch-exception-strategy doc:name="Unsupported_MediaType_Exception"
+			when="org.mule.module.apikit.exception.NotAcceptableException">
+			<set-payload
+				value="Media Type is Not Support! Requried aplication/PDF form"
+				doc:name="Set Payload" />
+			<set-property propertyName="http.status" value="415"
+				doc:name="Property" />
+			<logger level="INFO" doc:name="Logger" message="#" />
+		</catch-exception-strategy>
+		<catch-exception-strategy doc:name="MethodNotAllowedException"
+			when="#[exception.causedBy(org.mule.module.apikit.exception.MethodNotAllowedException)]">
+			<set-payload value="Method Not Allowed!!" doc:name="Set Payload" />
+			<set-property propertyName="http.status" value="405"
+				doc:name="Property" />
+			<logger level="INFO" doc:name="Logger" message="#" />
+		</catch-exception-strategy>
+
+		<catch-exception-strategy doc:name="AccountId_StatementId_Validation_Exception"
+			when="#[exception.causedBy(org.mule.module.apikit.exception.NotFoundException)]">
+			<set-payload value="AccountId or StatementId Not Empty!!!"
+				doc:name="Set Payload" />
+			<set-property propertyName="http.status" value="400"
+				doc:name="Property" />
+			<logger level="INFO" doc:name="Logger" message="#" />
+		</catch-exception-strategy>
+		
+		<catch-exception-strategy doc:name="Authentication_Validation_Exception"
+			when="#[exception.causedBy(org.springframework.security.authentication.BadCredentialsException)]">
+			<set-payload value="Unauthenticate Due to BadCredentials!!!"
+				doc:name="Set Payload" />
+			<set-property propertyName="http.status" value="401"
+				doc:name="Property" />
+			<logger level="INFO" doc:name="Logger" message="#" />
+		</catch-exception-strategy>
+
+		<catch-exception-strategy doc:name="globalCatch_Exception_Strategy" />
+	</choice-exception-strategy>
+
+
+
+</mule>

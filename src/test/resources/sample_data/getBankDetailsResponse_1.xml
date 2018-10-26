@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ns0:getBankDetailsResponse xmlns:ns0="http://bank-web-service">
+  <ns0:bank>
+    <ns0:bankName>????</ns0:bankName>
+    <ns0:branch/>
+  </ns0:bank>
+</ns0:getBankDetailsResponse>
